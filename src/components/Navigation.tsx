@@ -2,9 +2,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { GraduationCap, Menu, X } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <nav className="fixed top-0 w-full z-50 bg-white/90 backdrop-blur-md border-b shadow-soft">
@@ -41,10 +43,10 @@ const Navigation = () => {
           
           {/* Desktop CTA */}
           <div className="hidden md:flex items-center space-x-4">
-            <Button variant="ghost">
+            <Button variant="ghost" onClick={() => navigate('/dashboard')}>
               Sign In
             </Button>
-            <Button variant="hero">
+            <Button variant="hero" onClick={() => navigate('/dashboard')}>
               Join Now
             </Button>
           </div>
@@ -79,10 +81,10 @@ const Navigation = () => {
                 Pricing
               </a>
               <div className="px-3 py-2 space-y-2">
-                <Button variant="ghost" className="w-full">
+                <Button variant="ghost" className="w-full" onClick={() => navigate('/dashboard')}>
                   Sign In
                 </Button>
-                <Button variant="hero" className="w-full">
+                <Button variant="hero" className="w-full" onClick={() => navigate('/dashboard')}>
                   Join Now
                 </Button>
               </div>
