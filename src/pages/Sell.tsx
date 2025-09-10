@@ -234,8 +234,6 @@ const Sell = () => {
           </div>
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 };

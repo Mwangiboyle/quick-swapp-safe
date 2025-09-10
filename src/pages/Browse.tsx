@@ -178,8 +178,6 @@ const Browse = () => {
           </div>
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 };
