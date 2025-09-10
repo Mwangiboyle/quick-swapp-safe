@@ -4,8 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Send, Search, MoreVertical, Shield } from "lucide-react";
-import Navigation from "@/components/Navigation";
-import Footer from "@/components/Footer";
+import Navigation from "@/components/DashboardNavigation";
 
 const Messages = () => {
   const [selectedChat, setSelectedChat] = useState(0);
