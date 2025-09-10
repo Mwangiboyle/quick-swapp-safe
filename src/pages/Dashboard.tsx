@@ -3,8 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Package, MessageCircle, Wallet, TrendingUp } from "lucide-react";
-import Navigation from "@/components/Navigation";
-import Footer from "@/components/Footer";
+import DashboardNavigation from "@/components/DashboardNavigation";
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -24,7 +23,7 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
+      <DashboardNavigation />
       
       <main className="pt-20 pb-16">
         <div className="max-w-7xl mx-auto px-6">
@@ -106,8 +105,6 @@ const Dashboard = () => {
           </Card>
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 };
