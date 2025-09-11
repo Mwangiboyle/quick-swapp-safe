@@ -43,10 +43,10 @@ const Navigation = () => {
           
           {/* Desktop CTA */}
           <div className="hidden md:flex items-center space-x-4">
-            <Button variant="ghost" onClick={() => navigate('/dashboard')}>
+            <Button variant="ghost" onClick={() => navigate('/signin')}>
               Sign In
             </Button>
-            <Button variant="hero" onClick={() => navigate('/dashboard')}>
+            <Button variant="hero" onClick={() => navigate('/signup')}>
               Join Now
             </Button>
           </div>
@@ -81,10 +81,10 @@ const Navigation = () => {
                 Pricing
               </a>
               <div className="px-3 py-2 space-y-2">
-                <Button variant="ghost" className="w-full" onClick={() => navigate('/dashboard')}>
+                <Button variant="ghost" className="w-full" onClick={() => navigate('/signin')}>
                   Sign In
                 </Button>
-                <Button variant="hero" className="w-full" onClick={() => navigate('/dashboard')}>
+                <Button variant="hero" className="w-full" onClick={() => navigate('/signup')}>
                   Join Now
                 </Button>
               </div>
