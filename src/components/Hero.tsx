@@ -1,9 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Shield, Users, MessageCircle, GraduationCap, ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import heroImage from "@/assets/hero-marketplace.jpg";
 
 const Hero = () => {
+  const navigate = useNavigate();
+  
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background with gradient overlay */}
@@ -36,11 +39,11 @@ const Hero = () => {
         </p>
         
         <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-          <Button variant="hero" size="lg" className="text-lg px-8 py-4">
+          <Button variant="hero" size="lg" className="text-lg px-8 py-4" onClick={() => navigate('/dashboard')}>
             Start Selling Now
             <ArrowRight className="w-5 h-5 ml-2" />
           </Button>
-          <Button variant="outline-hero" size="lg" className="text-lg px-8 py-4">
+          <Button variant="outline-hero" size="lg" className="text-lg px-8 py-4" onClick={() => navigate('/dashboard')}>
             Browse Marketplace
           </Button>
         </div>
