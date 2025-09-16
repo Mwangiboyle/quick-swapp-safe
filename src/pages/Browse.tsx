@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -170,11 +169,9 @@ const Browse = () => {
                     </div>
                   </div>
                   
-                  <Link to={`/product/${item.id}`}>
-                    <Button className="w-full mt-4" variant="outline">
-                      View Details
-                    </Button>
-                  </Link>
+                  <Button className="w-full mt-4" variant="outline">
+                    View Details
+                  </Button>
                 </CardContent>
               </Card>
             ))}
