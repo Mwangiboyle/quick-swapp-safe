@@ -12,6 +12,7 @@ import Messages from "./pages/Messages";
 import Profile from "./pages/Profile";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
+import ProductDetails from "./pages/ProductDetails";
 import Callback from "./pages/auth/callback.tsx"
 import ResendConfirmation from "./pages/auth/resendConfirmation.tsx"
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/signup" element={<SignUp />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/browse" element={<Browse />} />
+          <Route path="/product/:id" element={<ProductDetails />} />
           <Route path="/sell" element={<Sell />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/profile" element={<Profile />} />
