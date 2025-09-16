@@ -12,7 +12,8 @@ import Messages from "./pages/Messages";
 import Profile from "./pages/Profile";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
-
+import Callback from "./pages/auth/callback.tsx"
+import ResendConfirmation from "./pages/auth/resendConfirmation.tsx"
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -30,6 +31,8 @@ const App = () => (
           <Route path="/sell" element={<Sell />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="auth/callback" element={<Callback />} />
+          <Route path="auth/resendconfirmation" element={<ResendConfirmation />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

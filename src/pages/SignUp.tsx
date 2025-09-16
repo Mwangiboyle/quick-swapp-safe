@@ -5,10 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/lib/supabaseClient"; // Import your Supabase client
 
 const VALID_DOMAINS = [
   "uonbi.ac.ke",
-  "jkuat.ac.ke",
+  "students.jkuat.ac.ke",
   "ku.ac.ke",
   "egerton.ac.ke",
   "dkut.ac.ke",
@@ -81,15 +82,55 @@ const SignUp = () => {
 
     setIsLoading(true);
 
-    // Simulate sign up process
-    setTimeout(() => {
-      toast({
-        title: "Account created successfully",
-        description: "Welcome to Quick Swapp! Please verify your email.",
+    try {
+      // Sign up the user with Supabase
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          data: {
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            full_name: `${formData.firstName} ${formData.lastName}`,
+          }
+        }
       });
-      navigate("/signin");
+
+      if (error) {
+        toast({
+          title: "Error creating account",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (data?.user && !data.session) {
+        // User was created but needs to confirm email
+        toast({
+          title: "Check your email",
+          description: "We've sent you a confirmation link. Please check your email and click the link to verify your account.",
+        });
+        navigate("/signin");
+      } else if (data?.user && data.session) {
+        // User was created and automatically signed in (email confirmation disabled)
+        toast({
+          title: "Account created successfully",
+          description: "Welcome to Quick Swapp!",
+        });
+        navigate("/dashboard");
+      }
+    } catch (error) {
+      console.error("Signup error:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const handleInputChange = (field: string, value: string) => {
