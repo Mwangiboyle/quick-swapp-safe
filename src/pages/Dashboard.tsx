@@ -4,23 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Package, MessageCircle, Wallet, TrendingUp } from "lucide-react";
 import DashboardNavigation from "@/components/DashboardNavigation";
+import { useDashboardStats, UseCurrentProfile } from '@/lib/hooks';
 
 const Dashboard = () => {
-  const [activeTab, setActiveTab] = useState("overview");
+  const { data: profile } = useCurrentProfile();
+  const { data: stats } = useDashboardStats(profile?.id || '');
 
-  const stats = [
-    { title: "Active Listings", value: "12", icon: Package, color: "text-primary" },
-    { title: "Total Sales", value: "$2,340", icon: TrendingUp, color: "text-success" },
-    { title: "Messages", value: "8", icon: MessageCircle, color: "text-warning" },
-    { title: "Wallet Balance", value: "$145.50", icon: Wallet, color: "text-info" },
-  ];
-
-  const recentListings = [
-    { id: 1, title: "MacBook Pro 2021", price: "$1,200", status: "active", views: 45 },
-    { id: 2, title: "Calculus Textbook", price: "$45", status: "sold", views: 12 },
-    { id: 3, title: "iPhone 13", price: "$650", status: "pending", views: 23 },
-  ];
-
+  // Use real data instead of mock stats
+  // Rest of your component...
+}
   return (
     <div className="min-h-screen bg-background">
       <DashboardNavigation />

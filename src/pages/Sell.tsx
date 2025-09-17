@@ -7,6 +7,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Upload, X, Camera } from "lucide-react";
 import Navigation from  "@/components/DashboardNavigation";
+import { useCreateItem, useCategories } from '@/lib/hooks';
+import { uploadItemImages } from '@/lib/storage';
+import { validateItem } from '@/lib/validation';
 
 const Sell = () => {
   const [images, setImages] = useState<string[]>([]);
@@ -20,7 +23,7 @@ const Sell = () => {
     "New", "Like New", "Good", "Fair", "Poor"
   ];
 
-  const handleImageUpload = (files: FileList | null) => {
+ const handleImageUpload = (files: FileList | null) => {
     if (files) {
       const newImages = Array.from(files).map(file => URL.createObjectURL(file));
       setImages(prev => [...prev, ...newImages].slice(0, 5)); // Max 5 images

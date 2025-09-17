@@ -6,78 +6,20 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Search, Filter, Heart, MapPin } from "lucide-react";
 import Navigation from "@/components/DashboardNavigation";
+import { useItems, useCategories } from '@/lib/hooks';
+import { itemsApi } from '@/lib/api';
 
 const Browse = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
 
-  const categories = [
-    "All", "Electronics", "Books", "Fashion", "Furniture", "Sports", "Beauty"
-  ];
-
-  const items = [
-    {
-      id: 1,
-      title: "MacBook Pro 2021",
-      price: "$1,200",
-      image: "/placeholder.svg",
-      seller: "Sarah M.",
-      location: "Campus North",
-      category: "Electronics",
-      verified: true
-    },
-    {
-      id: 2,
-      title: "Calculus Textbook",
-      price: "$45",
-      image: "/placeholder.svg",
-      seller: "Mike J.",
-      location: "Campus South",
-      category: "Books",
-      verified: true
-    },
-    {
-      id: 3,
-      title: "Nike Air Max",
-      price: "$80",
-      image: "/placeholder.svg",
-      seller: "Emma L.",
-      location: "Campus East",
-      category: "Fashion",
-      verified: false
-    },
-    {
-      id: 4,
-      title: "Study Desk",
-      price: "$120",
-      image: "/placeholder.svg",
-      seller: "Alex R.",
-      location: "Campus West",
-      category: "Furniture",
-      verified: true
-    },
-    {
-      id: 5,
-      title: "iPhone 13",
-      price: "$650",
-      image: "/placeholder.svg",
-      seller: "John D.",
-      location: "Campus North",
-      category: "Electronics",
-      verified: true
-    },
-    {
-      id: 6,
-      title: "Chemistry Lab Kit",
-      price: "$35",
-      image: "/placeholder.svg",
-      seller: "Lisa K.",
-      location: "Campus South",
-      category: "Books",
-      verified: true
-    }
-  ];
-
+  const {data: itemsData, isLoading } = useItems({
+    search: searchQuery,
+    category: selectedCategory
+  });
+  const { data: categoriesData } = useCategories();
+  const items = itemsData?.data || [];
+  const categories = ['All', ...(categoriesData?.data?.map(c => c.name) || [])];
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
