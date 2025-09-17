@@ -1,3 +1,4 @@
+// src/lib/types.ts
 export interface Profile {
   id: string;
   email: string;
@@ -61,4 +62,34 @@ export interface Review {
   reviewer?: Profile;
   reviewed_user?: Profile;
   items?: Item;
+}
+
+export interface CreateItemData {
+  title: string;
+  description?: string;
+  price: number;
+  condition: Item['condition'];
+  location?: string;
+  category_id?: string;
+  images?: string[];
+}
+
+export interface ItemFilters {
+  category?: string;
+  search?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  condition?: string;
+}
+
+// API Response types
+export interface ApiResponse<T> {
+  data: T | null;
+  error: Error | null;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  count: number;
+  error: Error | null;
 }

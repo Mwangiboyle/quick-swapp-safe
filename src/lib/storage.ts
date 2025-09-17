@@ -2,7 +2,7 @@
 import { supabase } from './supabaseClient';
 
 export class StorageService {
-  private static BUCKET_NAME = 'item_images';
+  private static BUCKET_NAME = 'item_images'; // Use hyphen to match your setup
 
   // Upload multiple item images
   static async uploadItemImages(files: FileList, itemId: string): Promise<string[]> {
