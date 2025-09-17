@@ -133,8 +133,70 @@ export const useProfile = (userId: string) => {
 export const useCurrentProfile = () => {
   return useQuery({
     queryKey: ['current-profile'],
-    queryFn: () => profilesApi.getCurrentProfile(),
-    retry: false,
+    queryFn: async () => {
+      console.log('🔍 Fetching current profile...');
+      
+      try {
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        
+        if (userError) {
+          console.error('❌ Auth error:', userError);
+          throw userError;
+        }
+        
+        if (!user) {
+          console.log('❌ No authenticated user');
+          return null;
+        }
+        
+        console.log('✅ Found user:', user.id, user.email);
+        
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+          
+        if (profileError) {
+          console.error('❌ Profile fetch error:', profileError);
+          // If profile doesn't exist, create it
+          if (profileError.code === 'PGRST116') {
+            console.log('🔧 Creating missing profile...');
+            const { data: newProfile, error: createError } = await supabase
+              .from('profiles')
+              .insert([
+                {
+                  id: user.id,
+                  email: user.email!,
+                  first_name: user.user_metadata?.first_name || '',
+                  last_name: user.user_metadata?.last_name || '',
+                  university_domain: user.email!.split('@')[1],
+                  is_verified: false
+                }
+              ])
+              .select()
+              .single();
+              
+            if (createError) {
+              console.error('❌ Profile creation error:', createError);
+              throw createError;
+            }
+            
+            console.log('✅ Created new profile:', newProfile);
+            return newProfile;
+          }
+          throw profileError;
+        }
+        
+        console.log('✅ Found profile:', profile);
+        return profile;
+      } catch (error) {
+        console.error('❌ useCurrentProfile error:', error);
+        throw error;
+      }
+    },
+    retry: 1,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
 

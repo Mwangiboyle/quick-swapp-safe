@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Camera, Star, Shield, MapPin, Calendar, Edit3, Loader2 } from "lucide-react";
+import { Camera, Star, Shield, MapPin, Calendar, Edit3, Loader2, Package } from "lucide-react";
 import Navigation from "@/components/DashboardNavigation";
 import { useCurrentProfile, useUpdateProfile, useUserReviews, useUserItems } from "@/lib/hooks";
 import { useToast } from "@/components/ui/use-toast";
@@ -28,7 +28,7 @@ const Profile = () => {
   const updateProfileMutation = useUpdateProfile();
 
   // Initialize form when profile loads
-  useState(() => {
+  useEffect(() => {
     if (profile) {
       setEditForm({
         first_name: profile.first_name || '',
