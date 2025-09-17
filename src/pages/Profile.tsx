@@ -7,64 +7,110 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Camera, Star, Shield, MapPin, Calendar, Edit3 } from "lucide-react";
+import { Camera, Star, Shield, MapPin, Calendar, Edit3, Loader2 } from "lucide-react";
 import Navigation from "@/components/DashboardNavigation";
+import { useCurrentProfile, useUpdateProfile, useUserReviews, useUserItems } from "@/lib/hooks";
+import { useToast } from "@/components/ui/use-toast";
 
 const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    first_name: '',
+    last_name: '',
+    phone: '',
+    bio: ''
+  });
+
+  const { toast } = useToast();
+  const { data: profile, isLoading: profileLoading } = useCurrentProfile();
+  const { data: reviewsData } = useUserReviews(profile?.id || '');
+  const { data: userItemsData } = useUserItems(profile?.id || '');
+  const updateProfileMutation = useUpdateProfile();
+
+  // Initialize form when profile loads
+  useState(() => {
+    if (profile) {
+      setEditForm({
+        first_name: profile.first_name || '',
+        last_name: profile.last_name || '',
+        phone: '', // Add phone field to your profile schema if needed
+        bio: '' // Add bio field to your profile schema if needed
+      });
+    }
+  }, [profile]);
+
+  const reviews = reviewsData?.data || [];
+  const soldItems = userItemsData?.data?.filter(item => item.status === 'sold') || [];
 
   const userStats = [
-    { label: "Items Sold", value: "23" },
-    { label: "Rating", value: "4.9" },
-    { label: "Reviews", value: "18" },
-    { label: "Member Since", value: "Jan 2024" }
+    { label: "Items Sold", value: soldItems.length.toString() },
+    { label: "Rating", value: "4.9" }, // Calculate from reviews
+    { label: "Reviews", value: reviews.length.toString() },
+    { label: "Member Since", value: profile?.created_at ? new Date(profile.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'N/A' }
   ];
 
-  const reviews = [
-    {
-      id: 1,
-      reviewer: "Sarah M.",
-      rating: 5,
-      comment: "Great seller! Item exactly as described and fast delivery.",
-      item: "MacBook Pro",
-      date: "2 days ago"
-    },
-    {
-      id: 2,
-      reviewer: "Mike J.",
-      rating: 5,
-      comment: "Smooth transaction, highly recommend!",
-      item: "Calculus Textbook",
-      date: "1 week ago"
-    },
-    {
-      id: 3,
-      reviewer: "Emma L.",
-      rating: 4,
-      comment: "Good condition as promised. Quick meetup.",
-      item: "Study Desk",
-      date: "2 weeks ago"
+  const getInitials = () => {
+    if (profile?.first_name && profile?.last_name) {
+      return `${profile.first_name[0]}${profile.last_name[0]}`.toUpperCase();
     }
-  ];
+    if (profile?.first_name) {
+      return profile.first_name[0].toUpperCase();
+    }
+    return profile?.email?.[0]?.toUpperCase() || 'U';
+  };
 
-  const soldItems = [
-    {
-      id: 1,
-      title: "MacBook Pro 2021",
-      price: "$1,200",
-      image: "/placeholder.svg",
-      soldDate: "2 days ago",
-      buyer: "Sarah M."
-    },
-    {
-      id: 2,
-      title: "Calculus Textbook",
-      price: "$45",
-      image: "/placeholder.svg",
-      soldDate: "1 week ago",
-      buyer: "Mike J."
+  const displayName = profile?.first_name 
+    ? `${profile.first_name} ${profile.last_name || ''}`.trim()
+    : 'User';
+
+  const handleEditToggle = () => {
+    if (isEditing) {
+      // Reset form to original values
+      if (profile) {
+        setEditForm({
+          first_name: profile.first_name || '',
+          last_name: profile.last_name || '',
+          phone: '',
+          bio: ''
+        });
+      }
     }
-  ];
+    setIsEditing(!isEditing);
+  };
+
+  const handleSaveProfile = async () => {
+    if (!profile) return;
+
+    try {
+      await updateProfileMutation.mutateAsync({
+        userId: profile.id,
+        updates: editForm
+      });
+      setIsEditing(false);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update profile",
+        variant: "destructive"
+      });
+    }
+  };
+
+  if (profileLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navigation />
+        <main className="pt-20 pb-16">
+          <div className="max-w-6xl mx-auto px-6 flex items-center justify-center min-h-[400px]">
+            <div className="flex items-center gap-2">
+              <Loader2 className="w-6 h-6 animate-spin" />
+              <span>Loading profile...</span>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -86,8 +132,8 @@ const Profile = () => {
                   <div className="flex flex-col items-center text-center">
                     <div className="relative mb-4">
                       <Avatar className="w-24 h-24">
-                        <AvatarImage src="/placeholder.svg" alt="Profile" />
-                        <AvatarFallback>AJ</AvatarFallback>
+                        <AvatarImage src={profile?.avatar_url || "/placeholder.svg"} alt="Profile" />
+                        <AvatarFallback>{getInitials()}</AvatarFallback>
                       </Avatar>
                       <Button
                         variant="outline"
@@ -98,33 +144,31 @@ const Profile = () => {
                       </Button>
                     </div>
                     
-                    <h2 className="text-2xl font-bold text-foreground mb-1">Alex Johnson</h2>
-                    <p className="text-muted-foreground mb-3">alex.johnson@university.edu</p>
+                    <h2 className="text-2xl font-bold text-foreground mb-1">{displayName}</h2>
+                    <p className="text-muted-foreground mb-3">{profile?.email}</p>
                     
                     <div className="flex items-center gap-2 mb-4">
                       <Badge className="bg-success/10 text-success border-success/20">
                         <Shield className="w-3 h-3 mr-1" />
-                        Verified Student
+                        {profile?.is_verified ? 'Verified Student' : 'Unverified'}
                       </Badge>
                     </div>
                     
                     <div className="flex items-center gap-1 mb-4">
-                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                      <span className="text-sm text-muted-foreground ml-2">4.9 (18 reviews)</span>
+                      {[1,2,3,4,5].map((star) => (
+                        <Star key={star} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                      ))}
+                      <span className="text-sm text-muted-foreground ml-2">4.9 ({reviews.length} reviews)</span>
                     </div>
                     
                     <div className="w-full space-y-2 text-sm">
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <MapPin className="w-4 h-4" />
-                        <span>University Campus</span>
+                        <span>{profile?.university_domain || 'University Campus'}</span>
                       </div>
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <Calendar className="w-4 h-4" />
-                        <span>Member since January 2024</span>
+                        <span>Member since {profile?.created_at ? new Date(profile.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'Unknown'}</span>
                       </div>
                     </div>
                   </div>
@@ -166,7 +210,8 @@ const Profile = () => {
                         <CardTitle>Profile Information</CardTitle>
                         <Button
                           variant="outline"
-                          onClick={() => setIsEditing(!isEditing)}
+                          onClick={handleEditToggle}
+                          disabled={updateProfileMutation.isPending}
                         >
                           <Edit3 className="w-4 h-4 mr-2" />
                           {isEditing ? 'Cancel' : 'Edit'}
@@ -179,7 +224,8 @@ const Profile = () => {
                           <Label htmlFor="firstName">First Name</Label>
                           <Input 
                             id="firstName" 
-                            defaultValue="Alex" 
+                            value={isEditing ? editForm.first_name : profile?.first_name || ''} 
+                            onChange={(e) => setEditForm(prev => ({ ...prev, first_name: e.target.value }))}
                             disabled={!isEditing}
                           />
                         </div>
@@ -187,7 +233,8 @@ const Profile = () => {
                           <Label htmlFor="lastName">Last Name</Label>
                           <Input 
                             id="lastName" 
-                            defaultValue="Johnson" 
+                            value={isEditing ? editForm.last_name : profile?.last_name || ''} 
+                            onChange={(e) => setEditForm(prev => ({ ...prev, last_name: e.target.value }))}
                             disabled={!isEditing}
                           />
                         </div>
@@ -197,8 +244,18 @@ const Profile = () => {
                         <Label htmlFor="email">Email</Label>
                         <Input 
                           id="email" 
-                          defaultValue="alex.johnson@university.edu" 
-                          disabled={!isEditing}
+                          value={profile?.email || ''} 
+                          disabled={true}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">Email cannot be changed</p>
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="university">University Domain</Label>
+                        <Input 
+                          id="university" 
+                          value={profile?.university_domain || ''} 
+                          disabled={true}
                         />
                       </div>
                       
@@ -206,7 +263,9 @@ const Profile = () => {
                         <Label htmlFor="phone">Phone Number</Label>
                         <Input 
                           id="phone" 
-                          defaultValue="+1 (555) 123-4567" 
+                          value={isEditing ? editForm.phone : ''} 
+                          onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
+                          placeholder="+254 700 000 000"
                           disabled={!isEditing}
                         />
                       </div>
@@ -216,7 +275,8 @@ const Profile = () => {
                         <Textarea 
                           id="bio" 
                           placeholder="Tell other users about yourself..."
-                          defaultValue="Computer Science student looking to buy and sell quality items with fellow students."
+                          value={isEditing ? editForm.bio : ''} 
+                          onChange={(e) => setEditForm(prev => ({ ...prev, bio: e.target.value }))}
                           disabled={!isEditing}
                           rows={3}
                         />
@@ -224,8 +284,20 @@ const Profile = () => {
                       
                       {isEditing && (
                         <div className="flex gap-2">
-                          <Button>Save Changes</Button>
-                          <Button variant="outline" onClick={() => setIsEditing(false)}>
+                          <Button 
+                            onClick={handleSaveProfile}
+                            disabled={updateProfileMutation.isPending}
+                          >
+                            {updateProfileMutation.isPending ? (
+                              <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Saving...
+                              </>
+                            ) : (
+                              'Save Changes'
+                            )}
+                          </Button>
+                          <Button variant="outline" onClick={handleEditToggle}>
                             Cancel
                           </Button>
                         </div>
@@ -241,32 +313,47 @@ const Profile = () => {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
-                        {reviews.map((review) => (
-                          <div key={review.id} className="border border-border/50 rounded-lg p-4">
-                            <div className="flex items-start justify-between mb-2">
-                              <div>
-                                <h4 className="font-medium text-foreground">{review.reviewer}</h4>
-                                <p className="text-sm text-muted-foreground">Bought: {review.item}</p>
-                              </div>
-                              <div className="text-right">
-                                <div className="flex items-center gap-1">
-                                  {[...Array(5)].map((_, i) => (
-                                    <Star
-                                      key={i}
-                                      className={`w-4 h-4 ${
-                                        i < review.rating
-                                          ? 'fill-yellow-400 text-yellow-400'
-                                          : 'text-gray-300'
-                                      }`}
-                                    />
-                                  ))}
-                                </div>
-                                <p className="text-sm text-muted-foreground">{review.date}</p>
-                              </div>
-                            </div>
-                            <p className="text-foreground">{review.comment}</p>
+                        {reviews.length === 0 ? (
+                          <div className="text-center py-8 text-muted-foreground">
+                            <Star className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                            <p>No reviews yet. Start selling to get reviews!</p>
                           </div>
-                        ))}
+                        ) : (
+                          reviews.map((review) => (
+                            <div key={review.id} className="border border-border/50 rounded-lg p-4">
+                              <div className="flex items-start justify-between mb-2">
+                                <div>
+                                  <h4 className="font-medium text-foreground">
+                                    {review.reviewer?.first_name} {review.reviewer?.last_name}
+                                  </h4>
+                                  <p className="text-sm text-muted-foreground">
+                                    {review.items?.title && `Bought: ${review.items.title}`}
+                                  </p>
+                                </div>
+                                <div className="text-right">
+                                  <div className="flex items-center gap-1">
+                                    {[...Array(5)].map((_, i) => (
+                                      <Star
+                                        key={i}
+                                        className={`w-4 h-4 ${
+                                          i < review.rating
+                                            ? 'fill-yellow-400 text-yellow-400'
+                                            : 'text-gray-300'
+                                        }`}
+                                      />
+                                    ))}
+                                  </div>
+                                  <p className="text-sm text-muted-foreground">
+                                    {new Date(review.created_at).toLocaleDateString()}
+                                  </p>
+                                </div>
+                              </div>
+                              {review.comment && (
+                                <p className="text-foreground">{review.comment}</p>
+                              )}
+                            </div>
+                          ))
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -279,24 +366,41 @@ const Profile = () => {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
-                        {soldItems.map((item) => (
-                          <div key={item.id} className="flex items-center gap-4 p-4 border border-border/50 rounded-lg">
-                            <img
-                              src={item.image}
-                              alt={item.title}
-                              className="w-16 h-16 object-cover rounded-lg"
-                            />
-                            <div className="flex-1">
-                              <h4 className="font-medium text-foreground">{item.title}</h4>
-                              <p className="text-sm text-muted-foreground">Sold to {item.buyer}</p>
-                              <p className="text-sm text-muted-foreground">{item.soldDate}</p>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-bold text-primary">{item.price}</p>
-                              <Badge variant="secondary">Completed</Badge>
-                            </div>
+                        {soldItems.length === 0 ? (
+                          <div className="text-center py-8 text-muted-foreground">
+                            <Package className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                            <p>No sold items yet. Start listing items to track your sales!</p>
                           </div>
-                        ))}
+                        ) : (
+                          soldItems.map((item) => (
+                            <div key={item.id} className="flex items-center gap-4 p-4 border border-border/50 rounded-lg">
+                              <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center overflow-hidden">
+                                {item.images?.[0] ? (
+                                  <img
+                                    src={item.images[0]}
+                                    alt={item.title}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <Package className="w-6 h-6 text-muted-foreground" />
+                                )}
+                              </div>
+                              <div className="flex-1">
+                                <h4 className="font-medium text-foreground">{item.title}</h4>
+                                <p className="text-sm text-muted-foreground">
+                                  Sold on {new Date(item.updated_at).toLocaleDateString()}
+                                </p>
+                                {item.location && (
+                                  <p className="text-sm text-muted-foreground">{item.location}</p>
+                                )}
+                              </div>
+                              <div className="text-right">
+                                <p className="font-bold text-primary">KSh {item.price.toLocaleString()}</p>
+                                <Badge variant="secondary">Completed</Badge>
+                              </div>
+                            </div>
+                          ))
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -327,10 +431,14 @@ const Profile = () => {
                         
                         <div className="flex items-center justify-between p-4 border border-border/50 rounded-lg">
                           <div>
-                            <h4 className="font-medium text-foreground">Payment Methods</h4>
-                            <p className="text-sm text-muted-foreground">Manage your payment and withdrawal options</p>
+                            <h4 className="font-medium text-foreground">Account Verification</h4>
+                            <p className="text-sm text-muted-foreground">
+                              {profile?.is_verified ? 'Your account is verified' : 'Verify your student status'}
+                            </p>
                           </div>
-                          <Button variant="outline">Update</Button>
+                          <Button variant="outline">
+                            {profile?.is_verified ? 'Verified' : 'Verify Now'}
+                          </Button>
                         </div>
                         
                         <div className="pt-4 border-t border-border/50">

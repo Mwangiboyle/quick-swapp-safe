@@ -9,15 +9,23 @@ import {
   MessageCircle, 
   User, 
   Bell,
-  LogOut
+  LogOut,
+  Loader2
 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useCurrentProfile } from "@/lib/hooks";
+import { AuthService } from "@/lib/auth";
+import { useToast } from "@/components/ui/use-toast";
 
 const DashboardNavigation = () => {
-  const [notifications] = useState(3);
+  const [notifications] = useState(3); // This could come from API later
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { toast } = useToast();
+  
+  const { data: profile, isLoading: profileLoading } = useCurrentProfile();
 
   const navItems = [
     { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -26,6 +34,41 @@ const DashboardNavigation = () => {
     { path: "/messages", label: "Messages", icon: MessageCircle, badge: 2 },
     { path: "/profile", label: "Profile", icon: User },
   ];
+
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      await AuthService.signOut();
+      toast({
+        title: "Signed out",
+        description: "You have been signed out successfully",
+      });
+      navigate('/');
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to sign out",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
+  // Get user initials for avatar fallback
+  const getInitials = () => {
+    if (profile?.first_name && profile?.last_name) {
+      return `${profile.first_name[0]}${profile.last_name[0]}`.toUpperCase();
+    }
+    if (profile?.first_name) {
+      return profile.first_name[0].toUpperCase();
+    }
+    return profile?.email?.[0]?.toUpperCase() || 'U';
+  };
+
+  const displayName = profile?.first_name 
+    ? `${profile.first_name} ${profile.last_name || ''}`.trim()
+    : 'User';
 
   return (
     <nav className="fixed top-0 w-full z-50 bg-white/90 backdrop-blur-md border-b shadow-soft">
@@ -77,17 +120,35 @@ const DashboardNavigation = () => {
             
             <div className="flex items-center space-x-3">
               <Avatar className="w-8 h-8">
-                <AvatarImage src="/placeholder.svg" />
-                <AvatarFallback>AK</AvatarFallback>
+                <AvatarImage src={profile?.avatar_url || "/placeholder.svg"} />
+                <AvatarFallback>{getInitials()}</AvatarFallback>
               </Avatar>
               <div className="hidden md:block">
-                <p className="text-sm font-medium text-foreground">Alex Kim</p>
-                <p className="text-xs text-muted-foreground">alex@university.edu</p>
+                {profileLoading ? (
+                  <div className="space-y-1">
+                    <div className="w-20 h-4 bg-muted animate-pulse rounded"></div>
+                    <div className="w-32 h-3 bg-muted animate-pulse rounded"></div>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-sm font-medium text-foreground">{displayName}</p>
+                    <p className="text-xs text-muted-foreground">{profile?.email}</p>
+                  </>
+                )}
               </div>
             </div>
             
-            <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
-              <LogOut className="w-4 h-4" />
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+            >
+              {isLoggingOut ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <LogOut className="w-4 h-4" />
+              )}
             </Button>
           </div>
         </div>

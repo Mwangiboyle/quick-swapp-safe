@@ -164,7 +164,7 @@ export const TABLES = {
 
 // Supabase storage buckets
 export const STORAGE_BUCKETS = {
-  ITEM_IMAGES: 'item-images',
+  ITEM_IMAGES: 'item_mages',
   AVATARS: 'avatars',
 } as const;
 
