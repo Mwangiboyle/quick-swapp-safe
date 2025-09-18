@@ -9,7 +9,7 @@ import { useCurrentProfile, useConversations, useConversationMessages, useSendMe
 import { useToast } from "@/components/ui/use-toast";
 
 const Messages = () => {
-  const [selectedChat, setSelectedChat] = useState(0);
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -46,7 +46,16 @@ const Messages = () => {
       }, {})
     ) : [];
 
-  const currentConversation = conversations[selectedChat];
+  // Apply search filter
+  const filteredConversations = conversations.filter(conv => 
+    conv.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    conv.item.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Resolve current conversation by ID (works with filtering)
+  const currentConversation = selectedConversationId 
+    ? conversations.find((c: any) => c.id === selectedConversationId)
+    : undefined;
   
   const { data: messagesData } = useConversationMessages(
     currentConversation?.id || '',
@@ -101,10 +110,12 @@ const Messages = () => {
     }
   };
 
-  const filteredConversations = conversations.filter(conv => 
-    conv.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    conv.item.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Auto-select first conversation when data loads and none selected
+  useEffect(() => {
+    if (!selectedConversationId && conversations.length > 0) {
+      setSelectedConversationId(conversations[0].id);
+    }
+  }, [conversations, selectedConversationId]);
 
   if (conversationsLoading) {
     return (
@@ -163,13 +174,13 @@ const Messages = () => {
                   </CardHeader>
                   <CardContent className="p-0">
                     <div className="space-y-1 max-h-[400px] overflow-y-auto">
-                      {filteredConversations.map((conversation, index) => (
+                      {filteredConversations.map((conversation) => (
                         <div
                           key={conversation.id}
                           className={`p-4 cursor-pointer hover:bg-muted/50 transition-colors border-b border-border/50 ${
-                            selectedChat === index ? 'bg-muted' : ''
+                            selectedConversationId === conversation.id ? 'bg-muted' : ''
                           }`}
-                          onClick={() => setSelectedChat(index)}
+                          onClick={() => setSelectedConversationId(conversation.id)}
                         >
                           <div className="flex items-start gap-3">
                             <div className="relative">
