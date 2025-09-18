@@ -19,6 +19,31 @@ import type {
 // Items API
 const DEMO_MODE = (import.meta as any).env?.VITE_DEMO_MODE === 'true';
 
+// Robust UUID v4 generator for browsers/environments without crypto.randomUUID
+function generateUUIDv4(): string {
+  // Prefer native randomUUID
+  // @ts-ignore
+  if (typeof globalThis !== 'undefined' && globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') {
+    // @ts-ignore
+    return globalThis.crypto.randomUUID();
+  }
+  // Use getRandomValues if available
+  // @ts-ignore
+  const cryptoObj = (typeof globalThis !== 'undefined') ? globalThis.crypto || (globalThis as any).msCrypto : undefined;
+  if (cryptoObj && typeof cryptoObj.getRandomValues === 'function') {
+    const buf = new Uint8Array(16);
+    cryptoObj.getRandomValues(buf);
+    // Per RFC 4122 section 4.4
+    buf[6] = (buf[6] & 0x0f) | 0x40; // version 4
+    buf[8] = (buf[8] & 0x3f) | 0x80; // variant 10
+    const hex = Array.from(buf).map(b => b.toString(16).padStart(2, '0'));
+    return `${hex[0]}${hex[1]}${hex[2]}${hex[3]}-${hex[4]}${hex[5]}-${hex[6]}${hex[7]}-${hex[8]}${hex[9]}-${hex[10]}${hex[11]}${hex[12]}${hex[13]}${hex[14]}${hex[15]}`;
+  }
+  // Last resort (less random but valid format)
+  const s4 = () => Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
+  return `${s4()}${s4()}-${s4()}-${s4()}-${s4()}-${s4()}${s4()}${s4()}`;
+}
+
 export const itemsApi = {
   // Get all active items with optional filters
   async getItems(filters?: ItemFilters) {
@@ -307,13 +332,43 @@ export const messagesApi = {
       const saved = demoStore.addMessage(messageData);
       return Promise.resolve({ data: saved, error: null } as any);
     }
-    return supabase.from('messages').insert(messageData).select().single();
+    const { data, error } = await supabase.from('messages').insert(messageData).select().single();
+    if (error) throw error;
+    return { data, error } as any;
   },
 
   async createConversation(senderId: string, receiverId: string, itemId?: string) {
-    // Generate a conversation ID (could be a combination of user IDs or UUID)
-    const conversationId = makeDemoConversationId(senderId, receiverId, itemId);
-    return conversationId;
+    if (DEMO_MODE) {
+      const conversationId = makeDemoConversationId(senderId, receiverId, itemId);
+      return conversationId;
+    }
+    // Try to find an existing conversation (either direction). If itemId provided, include it; otherwise ignore item filter.
+    let existing: any[] | null = null;
+    let findErr: any = null;
+    if (itemId) {
+      const { data, error } = await supabase
+        .from('messages')
+        .select('conversation_id')
+        .or(`and(sender_id.eq.${senderId},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${senderId})`)
+        .eq('item_id', itemId)
+        .limit(1);
+      existing = data as any[] | null;
+      findErr = error;
+    } else {
+      const { data, error } = await supabase
+        .from('messages')
+        .select('conversation_id')
+        .or(`and(sender_id.eq.${senderId},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${senderId})`)
+        .limit(1);
+      existing = data as any[] | null;
+      findErr = error;
+    }
+    if (!findErr && existing && existing.length > 0 && existing[0]?.conversation_id) {
+      return existing[0].conversation_id as unknown as string;
+    }
+    // Create a new UUID conversation id that matches DB uuid type
+    const newId = generateUUIDv4();
+    return newId;
   }
 };
 
