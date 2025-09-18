@@ -1,5 +1,6 @@
 // src/lib/storage.ts
 import { supabase } from './supabaseClient';
+const DEMO_MODE = (import.meta as any).env?.VITE_DEMO_MODE === 'true';
 
 export class StorageService {
   private static BUCKET_NAME = 'item_images'; // Use hyphen to match your setup
@@ -15,6 +16,10 @@ export class StorageService {
 
   // Upload single file
   static async uploadFile(file: File, path: string): Promise<string> {
+    if (DEMO_MODE) {
+      // Return a local object URL to simulate uploads in demo mode
+      return URL.createObjectURL(file);
+    }
     // Validate file type
     if (!this.isValidImageType(file.type)) {
       throw new Error('Invalid file type. Only images are allowed.');
@@ -56,6 +61,10 @@ export class StorageService {
 
   // Delete file
   static async deleteFile(path: string): Promise<void> {
+    if (DEMO_MODE) {
+      // No-op in demo mode
+      return;
+    }
     const { error } = await supabase.storage
       .from(this.BUCKET_NAME)
       .remove([path]);
@@ -68,6 +77,10 @@ export class StorageService {
 
   // Delete multiple files
   static async deleteFiles(paths: string[]): Promise<void> {
+    if (DEMO_MODE) {
+      // No-op in demo mode
+      return;
+    }
     const { error } = await supabase.storage
       .from(this.BUCKET_NAME)
       .remove(paths);
@@ -80,6 +93,10 @@ export class StorageService {
 
   // Get file URL from storage path
   static getPublicUrl(path: string): string {
+    if (DEMO_MODE) {
+      // In demo mode, path may already be an object URL
+      return path;
+    }
     const { data: { publicUrl } } = supabase.storage
       .from(this.BUCKET_NAME)
       .getPublicUrl(path);

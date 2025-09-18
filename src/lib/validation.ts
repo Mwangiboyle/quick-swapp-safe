@@ -17,6 +17,7 @@ export const VALID_UNIVERSITY_DOMAINS = [
   'kca.ac.ke',
   'pu.ac.ke',
   'seku.ac.ke',
+  'gmail.com',
 ];
 
 export interface ValidationError {

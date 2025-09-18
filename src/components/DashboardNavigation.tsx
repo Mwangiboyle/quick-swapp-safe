@@ -12,26 +12,66 @@ import {
   LogOut,
   Loader2
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useCurrentProfile } from "@/lib/hooks";
+import { useCurrentProfile, useConversations } from "@/lib/hooks";
 import { AuthService } from "@/lib/auth";
 import { useToast } from "@/components/ui/use-toast";
 
 const DashboardNavigation = () => {
-  const [notifications] = useState(3); // This could come from API later
+  // Notifications placeholder (set to 0 for now)
+  const [notifications] = useState(0);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
   
   const { data: profile, isLoading: profileLoading } = useCurrentProfile();
+  const { data: conversationsData } = useConversations(profile?.id || '');
+  const [storageTick, setStorageTick] = useState(0);
+
+  useEffect(() => {
+    const onCustom = () => setStorageTick((t) => t + 1);
+    window.addEventListener('last-read-updated', onCustom as EventListener);
+    return () => {
+      window.removeEventListener('last-read-updated', onCustom as EventListener);
+    };
+  }, []);
+
+  // Local storage key for last-read per conversation
+  const LAST_READ_KEY = 'quick-swapp-last-read';
+
+  type LastReadMap = { [conversationId: string]: string };
+
+  const getLastReadMap = (): LastReadMap => {
+    try {
+      const raw = localStorage.getItem(LAST_READ_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  };
+
+  // Compute unread messages count dynamically
+  const unreadMessages = useMemo(() => {
+    const lastRead = getLastReadMap();
+    const messages = conversationsData?.data || [];
+    if (!profile?.id || messages.length === 0) return 0;
+    return messages.reduce((count: number, msg: any) => {
+      // Count only incoming messages
+      const isIncoming = msg.receiver_id === profile.id;
+      if (!isIncoming) return count;
+      const lr = lastRead[msg.conversation_id];
+      const isUnread = !lr || new Date(msg.created_at) > new Date(lr);
+      return count + (isUnread ? 1 : 0);
+    }, 0);
+  }, [conversationsData?.data, profile?.id, storageTick]);
 
   const navItems = [
     { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { path: "/browse", label: "Browse", icon: Search },
     { path: "/sell", label: "Sell", icon: Plus },
-    { path: "/messages", label: "Messages", icon: MessageCircle, badge: 2 },
+    { path: "/messages", label: "Messages", icon: MessageCircle, badge: unreadMessages },
     { path: "/profile", label: "Profile", icon: User },
   ];
 

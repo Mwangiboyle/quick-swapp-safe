@@ -59,7 +59,8 @@ export const KENYAN_UNIVERSITY_DOMAINS = [
   'gretsauniversity.ac.ke', // Great Lakes University
   'kca.ac.ke',            // KCA University
   'pu.ac.ke',             // Pwani University
-  'seku.ac.ke',           // South Eastern Kenya University
+  'seku.ac.ke',// South Eastern Kenya University
+  'gmail.com'
 ] as const;
 
 // Price ranges for filtering

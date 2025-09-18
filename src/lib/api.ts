@@ -1,5 +1,11 @@
 // src/lib/api.ts
 import { supabase } from './supabaseClient';
+import {
+  demoStore,
+  demoProfile,
+  demoCategories,
+  makeDemoConversationId,
+} from './demoData';
 import type { 
   Item, 
   Profile, 
@@ -11,9 +17,31 @@ import type {
 } from './types';
 
 // Items API
+const DEMO_MODE = (import.meta as any).env?.VITE_DEMO_MODE === 'true';
+
 export const itemsApi = {
   // Get all active items with optional filters
   async getItems(filters?: ItemFilters) {
+    if (DEMO_MODE) {
+      // Demo: filter from in-memory store
+      let items = demoStore.getItems().filter(i => i.status === 'active');
+      if (filters?.category && filters.category !== 'all') {
+        items = items.filter(i => i.categories?.name?.toLowerCase() === filters.category.toLowerCase());
+      }
+      if (filters?.search) {
+        const s = filters.search.toLowerCase();
+        items = items.filter(i =>
+          i.title.toLowerCase().includes(s) || (i.description || '').toLowerCase().includes(s)
+        );
+      }
+      if (filters?.minPrice !== undefined) items = items.filter(i => i.price >= (filters.minPrice as number));
+      if (filters?.maxPrice !== undefined) items = items.filter(i => i.price <= (filters.maxPrice as number));
+      if (filters?.condition) items = items.filter(i => i.condition === filters.condition);
+      // sort by created_at desc
+      items = items.sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at));
+      return Promise.resolve({ data: items, error: null } as any);
+    }
+
     let query = supabase
       .from('items')
       .select(`
@@ -50,6 +78,10 @@ export const itemsApi = {
 
   // Get single item with seller info
   async getItem(id: string) {
+    if (DEMO_MODE) {
+      const item = demoStore.getItemById(id);
+      return Promise.resolve({ data: item, error: null } as any);
+    }
     return supabase
       .from('items')
       .select(`
@@ -69,6 +101,11 @@ export const itemsApi = {
 
   // Get similar items (same category, different item)
   async getSimilarItems(categoryId: string, excludeId: string, limit = 4) {
+    if (DEMO_MODE) {
+      const all = demoStore.getItems().filter(i => i.category_id === categoryId && i.id !== excludeId && i.status === 'active');
+      const items = all.sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at)).slice(0, limit);
+      return Promise.resolve({ data: items, error: null } as any);
+    }
     return supabase
       .from('items')
       .select(`
@@ -85,6 +122,21 @@ export const itemsApi = {
 
   // Create new item
   async createItem(itemData: CreateItemData) {
+    if (DEMO_MODE) {
+      const newItem: any = {
+        id: `demo-item-${Date.now()}`,
+        user_id: demoProfile.id,
+        status: 'active',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        ...itemData,
+        profiles: demoProfile,
+        categories: demoCategories.find(c => c.id === itemData.category_id) || undefined,
+      };
+      demoStore.setItems([newItem, ...demoStore.getItems()]);
+      return Promise.resolve({ data: newItem, error: null } as any);
+    }
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
@@ -103,6 +155,10 @@ export const itemsApi = {
 
   // Update item
   async updateItem(id: string, updates: Partial<CreateItemData>) {
+    if (DEMO_MODE) {
+      const updated = demoStore.updateItem(id, updates as any);
+      return Promise.resolve({ data: updated, error: null } as any);
+    }
     return supabase
       .from('items')
       .update({ ...updates, updated_at: new Date().toISOString() })
@@ -117,11 +173,20 @@ export const itemsApi = {
 
   // Delete item
   async deleteItem(id: string) {
+    if (DEMO_MODE) {
+      const remaining = demoStore.getItems().filter(i => i.id !== id);
+      demoStore.setItems(remaining);
+      return Promise.resolve({ data: null, error: null } as any);
+    }
     return supabase.from('items').delete().eq('id', id);
   },
 
   // Get user's items
   async getUserItems(userId: string) {
+    if (DEMO_MODE) {
+      const items = demoStore.getItems().filter(i => i.user_id === userId);
+      return Promise.resolve({ data: items, error: null } as any);
+    }
     return supabase
       .from('items')
       .select(`
@@ -134,6 +199,10 @@ export const itemsApi = {
 
   // Mark item as sold
   async markAsSold(id: string) {
+    if (DEMO_MODE) {
+      const updated = demoStore.updateItem(id, { status: 'sold' } as any);
+      return Promise.resolve({ data: updated, error: null } as any);
+    }
     return supabase
       .from('items')
       .update({ status: 'sold', updated_at: new Date().toISOString() })
@@ -146,6 +215,10 @@ export const itemsApi = {
 // Profile API
 export const profilesApi = {
   async getProfile(userId: string) {
+    if (DEMO_MODE) {
+      const p = userId === demoProfile.id ? demoProfile : demoProfile; // single demo user for now
+      return Promise.resolve({ data: p, error: null } as any);
+    }
     return supabase
       .from('profiles')
       .select('*')
@@ -154,6 +227,9 @@ export const profilesApi = {
   },
 
   async getCurrentProfile() {
+    if (DEMO_MODE) {
+      return Promise.resolve({ data: demoProfile, error: null } as any);
+    }
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
     
@@ -161,6 +237,11 @@ export const profilesApi = {
   },
 
   async updateProfile(userId: string, updates: Partial<Profile>) {
+    if (DEMO_MODE) {
+      // Shallow merge for demo
+      const updated = { ...demoProfile, ...updates, updated_at: new Date().toISOString() } as Profile;
+      return Promise.resolve({ data: updated, error: null } as any);
+    }
     return supabase
       .from('profiles')
       .update({ ...updates, updated_at: new Date().toISOString() })
@@ -180,6 +261,12 @@ export const profilesApi = {
 // Messages API
 export const messagesApi = {
   async getConversations(userId: string) {
+    if (DEMO_MODE) {
+      // Return all messages involving user
+      const msgs = demoStore.getMessages().filter(m => m.sender_id === userId || m.receiver_id === userId)
+        .sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at));
+      return Promise.resolve({ data: msgs, error: null } as any);
+    }
     // Get unique conversations by grouping messages
     return supabase
       .from('messages')
@@ -198,6 +285,11 @@ export const messagesApi = {
   },
 
   async getConversationMessages(conversationId: string, userId: string) {
+    if (DEMO_MODE) {
+      const msgs = demoStore.getMessages().filter(m => m.conversation_id === conversationId)
+        .sort((a, b) => +new Date(a.created_at) - +new Date(b.created_at));
+      return Promise.resolve({ data: msgs, error: null } as any);
+    }
     return supabase
       .from('messages')
       .select(`
@@ -211,12 +303,16 @@ export const messagesApi = {
   },
 
   async sendMessage(messageData: Omit<Message, 'id' | 'created_at'>) {
+    if (DEMO_MODE) {
+      const saved = demoStore.addMessage(messageData);
+      return Promise.resolve({ data: saved, error: null } as any);
+    }
     return supabase.from('messages').insert(messageData).select().single();
   },
 
   async createConversation(senderId: string, receiverId: string, itemId?: string) {
     // Generate a conversation ID (could be a combination of user IDs or UUID)
-    const conversationId = [senderId, receiverId, itemId].filter(Boolean).sort().join('-');
+    const conversationId = makeDemoConversationId(senderId, receiverId, itemId);
     return conversationId;
   }
 };
@@ -275,6 +371,9 @@ export const reviewsApi = {
 // Categories API
 export const categoriesApi = {
   async getCategories() {
+    if (DEMO_MODE) {
+      return Promise.resolve({ data: demoCategories, error: null } as any);
+    }
     return supabase
       .from('categories')
       .select('*')
@@ -293,6 +392,20 @@ export const categoriesApi = {
 // Dashboard Stats API
 export const dashboardApi = {
   async getUserStats(userId: string) {
+    if (DEMO_MODE) {
+      const items = demoStore.getItems().filter(i => i.user_id === userId);
+      const activeListings = items.filter(i => i.status === 'active').length;
+      const soldItems = items.filter(i => i.status === 'sold');
+      const totalSales = soldItems.reduce((sum, i) => sum + (i.price || 0), 0);
+      const unreadMessages = demoStore.getMessages().filter(m => m.receiver_id === userId).length;
+      return {
+        activeListings,
+        totalSales: `$${totalSales.toFixed(2)}`,
+        soldItemsCount: soldItems.length,
+        unreadMessages
+      };
+    }
+
     const [itemsResult, salesResult, messagesResult] = await Promise.all([
       // Active listings count
       supabase

@@ -14,6 +14,7 @@ import Profile from "./pages/Profile";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import ProductDetails from "./pages/ProductDetails";
+import Checkout from "./pages/Checkout";
 import Callback from "./pages/auth/callback";
 import ResendConfirmation from "./pages/auth/resendConfirmation";
 
@@ -44,6 +45,7 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/browse" element={<Browse />} />
           <Route path="/product/:id" element={<ProductDetails />} />
+          <Route path="/checkout/:id" element={<Checkout />} />
           <Route path="/sell" element={<Sell />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/profile" element={<Profile />} />

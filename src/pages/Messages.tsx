@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,6 +60,25 @@ const Messages = () => {
     time: new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     isOwn: msg.sender_id === profile?.id
   })) || [];
+
+  // Mark messages as read when a conversation is viewed
+  useEffect(() => {
+    const convoId = currentConversation?.id;
+    if (!convoId || !profile) return;
+
+    // When messages are loaded or conversation changes, set last-read timestamp
+    const LAST_READ_KEY = 'quick-swapp-last-read';
+    try {
+      const raw = localStorage.getItem(LAST_READ_KEY);
+      const map = raw ? JSON.parse(raw) : {};
+      map[convoId] = new Date().toISOString();
+      localStorage.setItem(LAST_READ_KEY, JSON.stringify(map));
+      // Notify navigation to recalc unread count
+      window.dispatchEvent(new Event('last-read-updated'));
+    } catch (e) {
+      // ignore storage errors in demo
+    }
+  }, [currentConversation?.id, messagesData?.data?.length, profile?.id]);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !currentConversation || !profile) return;

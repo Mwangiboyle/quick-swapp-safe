@@ -12,6 +12,7 @@ import {
   categoriesApi,
   dashboardApi 
 } from './api';
+import { demoProfile } from './demoData';
 import type { CreateItemData, ItemFilters } from './types';
 
 // Items hooks
@@ -130,11 +131,16 @@ export const useProfile = (userId: string) => {
   });
 };
 
+const DEMO_MODE = (import.meta as any).env?.VITE_DEMO_MODE === 'true';
+
 export const useCurrentProfile = () => {
   return useQuery({
     queryKey: ['current-profile'],
     queryFn: async () => {
       console.log('🔍 Fetching current profile...');
+      if (DEMO_MODE) {
+        return demoProfile;
+      }
       
       try {
         const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -329,6 +335,10 @@ export const useAuth = () => {
   return useQuery({
     queryKey: ['auth'],
     queryFn: async () => {
+      if (DEMO_MODE) {
+        // Return a mock session-like object
+        return { user: { id: demoProfile.id, email: demoProfile.email } } as any;
+      }
       const { data: { session } } = await supabase.auth.getSession();
       return session;
     },

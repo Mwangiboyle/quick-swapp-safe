@@ -22,6 +22,7 @@ const VALID_DOMAINS = [
   "kca.ac.ke",
   "pu.ac.ke",
   "seku.ac.ke",
+  "gmail.com",
 ];
 
 const SignUp = () => {
