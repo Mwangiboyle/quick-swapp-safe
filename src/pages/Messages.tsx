@@ -23,11 +23,19 @@ const Messages = () => {
     Object.values(
       conversationsData.data.reduce((acc: any, message: any) => {
         const conversationId = message.conversation_id;
-        if (!acc[conversationId] || new Date(message.created_at) > new Date(acc[conversationId].lastMessageDate)) {
-          // Determine if current user is sender or receiver
-          const isCurrentUserSender = message.sender_id === profile?.id;
-          const otherUser = isCurrentUserSender ? message.receiver : message.sender;
-          
+        const existing = acc[conversationId];
+        // Determine if current user is sender or receiver
+        const isCurrentUserSender = message.sender_id === profile?.id;
+        const otherUser = isCurrentUserSender ? message.receiver : message.sender;
+        // Always derive otherUserId from ids to avoid null joins
+        const otherUserId = isCurrentUserSender ? message.receiver_id : message.sender_id;
+
+        // Preserve known item context across messages
+        const resolvedItemId = message.item_id || existing?.itemId || null;
+        const resolvedItemTitle = message.items?.title || existing?.item || 'Unknown Item';
+
+        // Update entry if newer or not yet set
+        if (!existing || new Date(message.created_at) > new Date(existing.lastMessageDate)) {
           acc[conversationId] = {
             id: conversationId,
             name: `${otherUser?.first_name || ''} ${otherUser?.last_name || ''}`.trim() || 'Unknown User',
@@ -36,11 +44,15 @@ const Messages = () => {
             time: new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             lastMessageDate: message.created_at,
             unread: 0, // You'd need to implement read/unread tracking
-            item: message.items?.title || 'Unknown Item',
+            item: resolvedItemTitle,
             verified: otherUser?.is_verified || false,
-            otherUserId: otherUser?.id,
-            itemId: message.item_id
+            otherUserId,
+            itemId: resolvedItemId
           };
+        } else {
+          // Even if not the newest, ensure we keep item context once it appears
+          if (!existing.itemId && resolvedItemId) existing.itemId = resolvedItemId;
+          if (existing.item === 'Unknown Item' && resolvedItemTitle !== 'Unknown Item') existing.item = resolvedItemTitle;
         }
         return acc;
       }, {})

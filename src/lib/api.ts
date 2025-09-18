@@ -301,6 +301,7 @@ export const messagesApi = {
         message,
         sender_id,
         receiver_id,
+        item_id,
         sender:profiles!messages_sender_id_fkey(first_name, last_name, avatar_url, is_verified),
         receiver:profiles!messages_receiver_id_fkey(first_name, last_name, avatar_url, is_verified),
         items(id, title)

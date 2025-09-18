@@ -1,4 +1,4 @@
-import { useState } from "react";
+// import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Package, MessageCircle, Wallet, TrendingUp, Loader2 } from "lucide-react";
 import DashboardNavigation from "@/components/DashboardNavigation";
 import { useDashboardStats, useCurrentProfile, useUserItems } from '@/lib/hooks';
-import DatabaseTest from '@/components/DatabaseTest';
+// Removed DatabaseTest component import
 
 const Dashboard = () => {
   const { data: profile, isLoading: profileLoading } = useCurrentProfile();
@@ -179,7 +179,6 @@ const Dashboard = () => {
                   ))
                 )}
               </div>
-              <DatabaseTest />
             </CardContent>
           </Card>
         </div>

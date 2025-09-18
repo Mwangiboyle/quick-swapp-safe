@@ -17,6 +17,7 @@ import ProductDetails from "./pages/ProductDetails";
 import Checkout from "./pages/Checkout";
 import Callback from "./pages/auth/callback";
 import ResendConfirmation from "./pages/auth/resendConfirmation";
+// Auth guard removed per request
 
 // Create a client with good defaults for your app
 const queryClient = new QueryClient({
